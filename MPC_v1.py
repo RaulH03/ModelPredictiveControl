@@ -14,13 +14,13 @@ A = np.array([[1, T*V0, 0], [0, 1, T*V0/L], [0, 0, 1]])
 B = np.array([[0], [0], [T]])
 
 # Simulate path
-total_distance = 20.0 
+total_distance = 30.0 
 steps = int(total_distance / (V0 * T)) 
 s = np.linspace(0, total_distance, 200)
-road_y = 2 * np.sin(0.3 * s)
+road_y = 5 * np.sin(1.2 * s)
 
 # MPC Loop
-x_curr = np.array([0.3, 0.0, 0.0]) # Start 30cm off-center
+x_curr = np.array([0.6, 0.0, 0.0]) # Start 30cm off-center
 pos_x, pos_y = np.zeros(steps), np.zeros(steps)
 x_history = np.zeros((3, steps))
 
