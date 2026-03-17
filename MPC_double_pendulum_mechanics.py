@@ -6,7 +6,6 @@ t = me.dynamicsymbols._t
 
 l1, l2 = sm.symbols('l1:3')
 m1, m2 = sm.symbols('m1:3')
-I1, I2 = sm.symbols('I1:3')
 g, u = sm.symbols('g, u')
 
 N, A1, A2 = sm.symbols('N, A1, A2', cls=me.ReferenceFrame)
@@ -20,29 +19,25 @@ A2.orient_axis(A1, th2, A1.z)
 O = me.Point('0')
 O.set_vel(N, 0)
 
-r_O_c1 = -(l1/2) * A1.y
-r_O_j1 = -l1*A1.y
-r_O_c2 = r_O_j1 - l2/2*A2.y
+r_O_m1 = -l1*A1.y
+r_O_m2 = r_O_m1 - l2*A2.y
 
-Pc1 = me.Point('Pc1')
-Pc1.set_pos(O, r_O_c1)
+Pm1 = me.Point('Pm1')
+Pm1.set_pos(O, r_O_m1)
 
-Pc2 = me.Point('Pc2')
-Pc2.set_pos(O, r_O_c2)
+Pm2 = me.Point('Pm2')
+Pm2.set_pos(O, r_O_m2)
 
-Pc1.set_vel(N, r_O_c1.dt(N))
-Pc2.set_vel(N, r_O_c2.dt(N))
+Pm1.set_vel(N, r_O_m1.dt(N))
+Pm2.set_vel(N, r_O_m2.dt(N))
 
-I1_dyad = me.inertia(A1, 0, 0, I1)
-I2_dyad = me.inertia(A2, 0, 0, I2)
+P1 = me.Particle('P1', Pm1, m1)
+P2 = me.Particle('P2', Pm2, m2)
 
-Arm1 = me.RigidBody('Arm1', Pc1, A1, m1, (I1_dyad, Pc1))
-Arm2 = me.RigidBody('Arm2', Pc2, A2, m2, (I2_dyad, Pc2))
+P1.potential_energy = m1 * g * r_O_m1.dot(N.y)
+P2.potential_energy = m2 * g * r_O_m2.dot(N.y)
 
-Arm1.potential_energy = m1 * g * r_O_c1.dot(N.y)
-Arm2.potential_energy = m2 * g * r_O_c2.dot(N.y)
-
-L = me.Lagrangian(N, Arm1, Arm2)
+L = me.Lagrangian(N, P1, P2)
 
 forces = [(A1, u * N.z)]
 
@@ -80,16 +75,14 @@ eq_dict = {
 Ac = sm.simplify(Ac_sym.subs(eq_dict))
 Bc = sm.simplify(Bc_sym.subs(eq_dict))
 
-m1_val, m2_val = 5.0, 0.5
-l1_val, l2_val = 2.0, 0.5
+m1_val, m2_val = 2.0, 5.0
+l1_val, l2_val = 1.0, 1.0
 
 params = {
     m1: m1_val,
     m2: m2_val,
     l1: l1_val,
     l2: l2_val,
-    I1: (1.0 / 12.0) * m1_val * (l1_val**2), # I = 1/12 * m * l^2
-    I2: (1.0 / 12.0) * m2_val * (l2_val**2),
     g: 9.81
 }
 
@@ -101,8 +94,8 @@ Bc_num = Bc.subs(params)
 A = np.array(Ac_num).astype(np.float64)
 B = np.array(Bc_num).astype(np.float64)
 
-print("Numerical Ac:\n", np.round(A, 4))
-print("\nNumerical Bc:\n", np.round(B, 4))
+print("Numerical A:\n", np.round(A, 4))
+print("\nNumerical B:\n", np.round(B, 4))
 
 n = A.shape[0]
 
@@ -113,6 +106,6 @@ for i in range(1, n):
     term = np.linalg.matrix_power(A, i) @ B
     C = np.hstack((C, term))
 
-print(C)
-print(np.linalg.matrix_rank(C))
+print('\nControlability matrix\n', C)
+print('\nRank controlability matrix\n', np.linalg.matrix_rank(C))
 
