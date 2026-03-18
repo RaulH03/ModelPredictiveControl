@@ -1,6 +1,8 @@
 import numpy as np
+import numpy.linalg as lin
 import sympy as sm
 import sympy.physics.mechanics as me
+import scipy.signal as sig
 
 t = me.dynamicsymbols._t
 
@@ -75,8 +77,8 @@ eq_dict = {
 Ac = sm.simplify(Ac_sym.subs(eq_dict))
 Bc = sm.simplify(Bc_sym.subs(eq_dict))
 
-m1_val, m2_val = 2.0, 5.0
-l1_val, l2_val = 1.0, 1.0
+m1_val, m2_val = 0.1, 0.3
+l1_val, l2_val = 0.2, 0.1
 
 params = {
     m1: m1_val,
@@ -94,18 +96,52 @@ Bc_num = Bc.subs(params)
 A = np.array(Ac_num).astype(np.float64)
 B = np.array(Bc_num).astype(np.float64)
 
-print("Numerical A:\n", np.round(A, 4))
-print("\nNumerical B:\n", np.round(B, 4))
+print('Numerical A', np.round(A, 4))
+print('Numerical B', np.round(B, 4))
 
 n = A.shape[0]
 
-C = B 
+K = B 
 
 # Loop to stack AB, A^2B, A^3B horizontally
 for i in range(1, n):
-    term = np.linalg.matrix_power(A, i) @ B
-    C = np.hstack((C, term))
+    term = lin.matrix_power(A, i) @ B
+    K = np.hstack((K, term))
 
-print('\nControlability matrix\n', C)
-print('\nRank controlability matrix\n', np.linalg.matrix_rank(C))
+print('Controlability matrix', K)
+print('Rank controlability matrix', lin.matrix_rank(K))
+
+
+eigenvalues = lin.eigvals(A)
+
+# Find the fastest dynamics (maximum distance from the origin in the s-plane)
+max_omega = np.max(np.abs(eigenvalues)) # in rad/s
+max_freq_hz = max_omega / (2 * np.pi)   # convert to Hz
+
+# Rule of thumb: Sample ~20 times faster than the highest system frequency
+f_sample = 20 * max_freq_hz
+Ts = 1.0 / f_sample
+
+num_states = A.shape[0]
+num_inputs = B.shape[1]
+
+# Full state output and no direct feedthrough
+C_dummy = np.eye(num_states)
+D_dummy = np.zeros((num_states, num_inputs))
+
+sys_continuous = (A, B, C_dummy, D_dummy)
+
+# ZOH discretization
+sys_discrete = sig.cont2discrete(sys_continuous, Ts, method='zoh')
+
+# Extract the discrete matrices
+Ad = sys_discrete[0]
+Bd = sys_discrete[1]
+
+print('Discrete A')
+print(np.round(Ad, 4))
+print('Discrete B')
+print(np.round(Bd, 4))
+
+
 
