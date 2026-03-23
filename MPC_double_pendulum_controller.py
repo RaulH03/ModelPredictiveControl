@@ -50,8 +50,8 @@ for t in range(steps):
         cost += cp.quad_form(x[:, k], Q) + cp.quad_form(u[:, k], R)
         constraints += [x[:, k+1] == Ad @ x[:, k] + Bd @ u[:, k]]
         constraints += [cp.abs(u[:, k]) <= u_max]
-        constraints += [cp.abs(x[0, k]) <= theta1_max]
-        constraints += [cp.abs(x[1, k]) <= theta2_dev_max]
+        constraints += [cp.abs(x[0, k]) <= theta1_max]                  # might change to soft constraint?
+        constraints += [cp.abs(x[1, k]) <= theta2_dev_max]              # might change to soft constarint?
         
     cost += cp.quad_form(x[:, N], P) # Terminal Cost
     
