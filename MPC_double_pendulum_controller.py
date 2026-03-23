@@ -30,6 +30,8 @@ x_curr = np.array([0.0, np.deg2rad(5), 0.0, 0.0])       # Starting with a 5-degr
 
 # Constraints
 u_max = 5.0 # Max torque in Nm
+theta1_max = np.deg2rad(25)    # 25 degrees
+theta2_dev_max = np.deg2rad(25) # 25 degrees deviation
 
 # Simulation containers
 steps = 150
@@ -48,6 +50,8 @@ for t in range(steps):
         cost += cp.quad_form(x[:, k], Q) + cp.quad_form(u[:, k], R)
         constraints += [x[:, k+1] == Ad @ x[:, k] + Bd @ u[:, k]]
         constraints += [cp.abs(u[:, k]) <= u_max]
+        constraints += [cp.abs(x[0, k]) <= theta1_max]
+        constraints += [cp.abs(x[1, k]) <= theta2_dev_max]
         
     cost += cp.quad_form(x[:, N], P) # Terminal Cost
     
