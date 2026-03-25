@@ -2,6 +2,7 @@ import numpy as np
 import cvxpy as cp
 import matplotlib.pyplot as plt
 from scipy.linalg import solve_discrete_are
+from MPC_helper_functions import compute_terminal_alpha_double_pendulum
 
 # Model Setup
 Ad = np.array([[ 0.99100,  0.02730,  0.01910,  0.00020],
@@ -25,13 +26,19 @@ R = np.array([[0.1]])
 # Terminal Cost P
 P = solve_discrete_are(Ad, Bd, Q, R)
 
-# Initial State (Deviation from x_e)
-x_curr = np.array([0.0, np.deg2rad(5), 0.0, 0.0])       # Starting with a 5-degree tilt on the upper link
+# Terminal LQR gain: u = Kx
+K = -np.linalg.inv(R + Bd.T @ P @ Bd) @ (Bd.T @ P @ Ad)
 
 # Constraints
-u_max = 5.0 # Max torque in Nm
+u_max = 2.0 # Max torque in Nm
 theta1_max = np.deg2rad(25)    # 25 degrees
 theta2_dev_max = np.deg2rad(25) # 25 degrees deviation
+
+# Conservative ellipsoidal terminal set size
+alpha = compute_terminal_alpha_double_pendulum(P, K, theta1_max, theta2_dev_max, u_max)
+
+# Initial State (Deviation from x_e)
+x_curr = np.array([0.0, np.deg2rad(20), 0.0, 0.0])       # Starting with a 5-degree offset on the upper link
 
 # Simulation containers
 steps = 150
@@ -47,16 +54,30 @@ for t in range(steps):
     constraints = [x[:, 0] == x_curr]
     
     for k in range(N):
+
+        # Stage cost
         cost += cp.quad_form(x[:, k], Q) + cp.quad_form(u[:, k], R)
+
+        # Dynamics
         constraints += [x[:, k+1] == Ad @ x[:, k] + Bd @ u[:, k]]
+
+        # Input & State constraints
         constraints += [cp.abs(u[:, k]) <= u_max]
         constraints += [cp.abs(x[0, k]) <= theta1_max]                  # might change to soft constraint?
         constraints += [cp.abs(x[1, k]) <= theta2_dev_max]              # might change to soft constarint?
         
-    cost += cp.quad_form(x[:, N], P) # Terminal Cost
+    # Terminal Cost
+    cost += cp.quad_form(x[:, N], P)
+
+    # Terminal set constraint
+    constraints += [cp.quad_form(x[:, N], P) <= alpha]
     
     prob = cp.Problem(cp.Minimize(cost), constraints)
-    prob.solve(solver=cp.OSQP)
+    prob.solve(solver=cp.SCS)
+
+    if prob.status not in ["optimal", "optimal_inaccurate"]:
+        print(f"Solver failed at step {t}, status: {prob.status}")
+        break
     
     if u.value is None:
         print(f"Solver failed at step {t}")
