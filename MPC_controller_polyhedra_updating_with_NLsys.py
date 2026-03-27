@@ -74,7 +74,7 @@ for t in range(steps):
     constraints += [H_f @ x[:, N] <= h_f]
     
     prob = cp.Problem(cp.Minimize(cost), constraints)
-    prob.solve(solver=cp.OSQP)
+    prob.solve(solver=cp.CLARABEL)
 
     if prob.status not in ["optimal", "optimal_inaccurate"]:
         print(f"Solver failed at step {t}, status: {prob.status}")
