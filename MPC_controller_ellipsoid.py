@@ -38,7 +38,7 @@ theta2_dev_max = np.deg2rad(25) # 25 degrees deviation
 alpha = compute_terminal_alpha_double_pendulum(P, K, theta1_max, theta2_dev_max, u_max)
 
 # Initial State (Deviation from x_e)
-x_curr = np.array([0.0, np.deg2rad(20), 0.0, 0.0])       # Starting with a 5-degree offset on the upper link
+x_curr = np.array([0.0, np.deg2rad(5), 0.0, 0.0])       # Starting with a 5-degree offset on the upper link
 
 # Simulation containers
 steps = 150
