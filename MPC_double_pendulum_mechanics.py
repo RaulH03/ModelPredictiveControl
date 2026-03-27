@@ -96,9 +96,6 @@ Bc_num = Bc.subs(params)
 A = np.array(Ac_num).astype(np.float64)
 B = np.array(Bc_num).astype(np.float64)
 
-print('Numerical A\n', np.round(A, 4))
-print('Numerical B\n', np.round(B, 4))
-
 n = A.shape[0]
 
 K = B 
@@ -107,9 +104,6 @@ K = B
 for i in range(1, n):
     term = lin.matrix_power(A, i) @ B
     K = np.hstack((K, term))
-
-print('Controlability matrix\n', K)
-print('Rank controlability matrix\n', lin.matrix_rank(K))
 
 
 eigenvalues = lin.eigvals(A)
@@ -138,8 +132,20 @@ sys_discrete = sig.cont2discrete(sys_continuous, Ts, method='zoh')
 Ad = sys_discrete[0]
 Bd = sys_discrete[1]
 
-print('Discrete A\n', np.round(Ad, 4))
-print('Discrete B\n', np.round(Bd, 4))
+F_num = F.subs(params)
+
+non_linear_dynamics = sm.lambdify((*X, u), F_num, "numpy")
+
+
+if __name__ == "__main__":
+    print('Numerical A\n', np.round(A, 4))
+    print('Numerical B\n', np.round(B, 4))
+
+    print('Controlability matrix\n', K)
+    print('Rank controlability matrix\n', lin.matrix_rank(K))
+
+    print('Discrete A\n', np.round(Ad, 4))
+    print('Discrete B\n', np.round(Bd, 4))
 
 
 
