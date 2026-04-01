@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.optimize import linprog
+from scipy.integrate import solve_ivp
+from MPC_double_pendulum_mechanics import non_linear_dynamics, Ts
 
 # X_f = {x | x.T P x <= alpha}
 def compute_terminal_alpha_double_pendulum(P, K, theta1_max, theta2_dev_max, u_max):
@@ -107,3 +109,117 @@ def compute_polyhedral_terminal_set_double_pendulum(
         print(f"Warning: maximum iterations ({max_iter}) reached. Set may not be fully converged.")
 
     return H, h
+
+
+def f_nl(x_dev, u_dev, x_eq, u_eq):
+    """
+    Computes x_{k+1} = f_nl(x_k, u_k) by integrating the continuous 
+    nonlinear dynamics over one sample time Ts.
+    """
+    # Convert deviation variables to true physical variables
+    x_true = x_dev + x_eq
+    u_true = (u_dev + u_eq).item() # ensure scalar for the ODE
+    
+    # Define the ODE specifically for this constant input
+    def current_ode(t, x_state):
+        dx = non_linear_dynamics(*x_state, u_true)
+        return np.array(dx).flatten()
+    
+    # Integrate over one sample time
+    sol = solve_ivp(current_ode, [0, Ts], x_true, method='RK45', rtol=1e-10, atol=1e-10)
+    
+    # Extract final state and convert back to deviation variable
+    x_next_true = sol.y[:, -1]
+    return x_next_true - x_eq
+
+
+def sample_ellipsoid_boundary(P, current_alpha, num_samples):
+    """
+    Generates random state vectors 'x' that lie exactly on the 
+    surface of the ellipsoid x^T P x = current_alpha.
+    """
+    n = P.shape[0]
+    # Generate random points on an n-dimensional unit sphere
+    z = np.random.randn(n, num_samples)
+    z /= np.linalg.norm(z, axis=0)
+    
+    # Transform unit sphere points to the ellipsoid
+    # using the inverse square root of P
+    U, S, Vh = np.linalg.svd(P)
+    P_inv_sqrt = U @ np.diag(1.0 / np.sqrt(S)) @ U.T
+    
+    x_samples = P_inv_sqrt @ z * np.sqrt(current_alpha)
+    return x_samples
+
+
+def verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, current_alpha, num_samples=2000):
+    """
+    Checks Points 3 and 4 of Assumption 2.14 for the sampled points.
+    """
+    x_samples = sample_ellipsoid_boundary(P, current_alpha, num_samples)
+    
+    invariance_passed = True
+    descent_passed = True
+    
+    max_alpha_next = 0.0
+    max_descent_violation = 0.0
+
+    c_frac = 0.99
+    
+    for i in range(num_samples):
+        x_k = x_samples[:, i]
+        u_k = K @ x_k
+        
+        # Calculate next state using true nonlinear dynamics
+        x_next = f_nl(x_k, u_k, x_eq, u_eq)
+        
+        # Calculate Lyapunov function values
+        V_curr = x_k.T @ P @ x_k            # Should be exactly current_alpha
+        V_next = x_next.T @ P @ x_next
+        
+        # Calculate Stage Cost l(x, u)
+        stage_cost = x_k.T @ Q @ x_k + u_k.T @ R @ u_k
+        
+        # Point 3: Positive Invariance (V_next <= alpha)
+        # We add a tiny tolerance (1e-8) for floating point math
+        if V_next > current_alpha:
+            invariance_passed = False
+            if V_next > max_alpha_next:
+                max_alpha_next = V_next
+                
+        # Point 4: Local Descent (V_next - V_curr <= -stage_cost)
+        if (V_next - V_curr) > c_frac -stage_cost:
+            descent_passed = False
+            violation = (V_next - V_curr) - (c_frac * -stage_cost)
+            if violation > max_descent_violation:
+                max_descent_violation = violation
+                
+    return invariance_passed, descent_passed, max_alpha_next, max_descent_violation
+
+
+def find_nonlinear_terminal_set(P, K, Q, R , x_eq, u_eq, alpha, shrink_factor, itterations, num_samples):
+    alpha_nl = alpha 
+    i = 0
+    while i <= itterations:
+        inv_pass, desc_pass, next_V, desc_viol = verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, alpha_nl, num_samples)
+        
+        if inv_pass and desc_pass:
+            print(f"\n[SUCCESS] Nonlinear conditions satisfied!")
+            print(f"Final safe nonlinear alpha: {alpha_nl:.5f}")
+            break
+        else:
+            print(f"[FAILED] alpha = {alpha_nl:.5f}")
+            if not inv_pass:
+                print(f"  -> Invariance failed. Max V_next = {next_V:.5f} (Target: <= {alpha_nl:.5f})")
+            if not desc_pass:
+                print(f"  -> Descent failed. Max error = {desc_viol:.5e}, iteration {i}")
+                
+            # Shrink alpha and try again
+            alpha_nl *= shrink_factor
+
+        i += 1
+
+    if not inv_pass and not desc_pass:
+        print(f"[FAILED MAX ITTERS] alpha = {alpha_nl:.5f}")
+
+    return alpha_nl
