@@ -152,7 +152,7 @@ def sample_ellipsoid_boundary(P, current_alpha, num_samples):
     return x_samples
 
 
-def verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, current_alpha, num_samples=2000):
+def verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, current_alpha, num_samples):
     """
     Checks Points 3 and 4 of Assumption 2.14 for the sampled points.
     """
@@ -164,7 +164,7 @@ def verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, current_alpha, num_sam
     max_alpha_next = 0.0
     max_descent_violation = 0.0
 
-    c_frac = 0.99
+    c_frac = 0.9 # number between 0 and 1, higher nr says more of the energy decrease should look linear
     
     for i in range(num_samples):
         x_k = x_samples[:, i]
@@ -187,8 +187,8 @@ def verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, current_alpha, num_sam
             if V_next > max_alpha_next:
                 max_alpha_next = V_next
                 
-        # Point 4: Local Descent (V_next - V_curr <= -stage_cost)
-        if (V_next - V_curr) > c_frac -stage_cost:
+        # Point 4: Local Descent (V_next - V_curr <= c_frac -stage_cost)
+        if (V_next - V_curr) > (c_frac * -stage_cost):
             descent_passed = False
             violation = (V_next - V_curr) - (c_frac * -stage_cost)
             if violation > max_descent_violation:
@@ -197,8 +197,8 @@ def verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, current_alpha, num_sam
     return invariance_passed, descent_passed, max_alpha_next, max_descent_violation
 
 
-def find_nonlinear_terminal_set(P, K, Q, R , x_eq, u_eq, alpha, shrink_factor, itterations, num_samples):
-    alpha_nl = alpha 
+def find_nonlinear_terminal_set(P, K, Q, R , x_eq, u_eq, alpha_init, shrink_factor, itterations, num_samples):
+    alpha_nl = alpha_init
     i = 0
     while i <= itterations:
         inv_pass, desc_pass, next_V, desc_viol = verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, alpha_nl, num_samples)
