@@ -15,7 +15,7 @@ x_eq = np.array([0.0, np.pi, 0.0, 0.0])
 u_eq = 0.0
 
 # Tuning Weights
-Q = np.diag([10, 500, 10, 10]) #* Ts
+Q = np.diag([10, 500, 1, 10]) #* Ts
 R = np.array([[0.1]]) #* Ts
 
 # Terminal Cost P
