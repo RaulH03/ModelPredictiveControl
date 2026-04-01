@@ -11,16 +11,12 @@ n_states = 4
 n_inputs = 1
 N = 20
 
-shrink_factor = 0.95
-itterations = 2000
-num_samples = 2000
-
 x_eq = np.array([0.0, np.pi, 0.0, 0.0])
 u_eq = 0.0
 
 # Tuning Weights
-Q = np.diag([10, 500, 1, 10]) * Ts
-R = np.array([[0.1]]) * Ts
+Q = np.diag([10, 500, 10, 10]) #* Ts
+R = np.array([[0.1]]) #* Ts
 
 # Terminal Cost P
 P = solve_discrete_are(Ad, Bd, Q, R)
@@ -30,17 +26,17 @@ K = -np.linalg.inv(R + Bd.T @ P @ Bd) @ (Bd.T @ P @ Ad)
 
 # Constraints
 u_max = 2.0 # Max torque in Nm
-theta1_max = np.deg2rad(25)    # 25 degrees
-theta2_dev_max = np.deg2rad(25) # 25 degrees deviation
+theta1_max = np.deg2rad(90)    # 25 degrees
+theta2_dev_max = np.deg2rad(90) # 25 degrees deviation
 
 # Conservative ellipsoidal terminal set size
 alpha = compute_terminal_alpha_double_pendulum(P, K, theta1_max, theta2_dev_max, u_max)
 
 # Verify terminal set for NL system
-shrink_factor = 0.95
 itterations = 100
-num_samples = 2000
-nl_alpha = find_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, alpha, shrink_factor, itterations, num_samples)
+num_samples = 10000
+L_frac = 0.9 #fraction of the decrease that is linear
+nl_alpha = find_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, alpha, L_frac, itterations, num_samples)
 
 # Initial State (Deviation from x_e)
 x_curr = np.array([0.0, np.deg2rad(5), 0.0, 0.0])       # Starting with a 5-degree offset on the upper link

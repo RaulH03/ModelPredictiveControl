@@ -126,7 +126,7 @@ def f_nl(x_dev, u_dev, x_eq, u_eq):
         return np.array(dx).flatten()
     
     # Integrate over one sample time
-    sol = solve_ivp(current_ode, [0, Ts], x_true, method='RK45', rtol=1e-10, atol=1e-10)
+    sol = solve_ivp(current_ode, [0, Ts], x_true, method='RK45') #, rtol=1e-10, atol=1e-10)
     
     # Extract final state and convert back to deviation variable
     x_next_true = sol.y[:, -1]
@@ -152,7 +152,7 @@ def sample_ellipsoid_boundary(P, current_alpha, num_samples):
     return x_samples
 
 
-def verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, current_alpha, num_samples):
+def verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, current_alpha, L_frac, num_samples):
     """
     Checks Points 3 and 4 of Assumption 2.14 for the sampled points.
     """
@@ -160,11 +160,8 @@ def verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, current_alpha, num_sam
     
     invariance_passed = True
     descent_passed = True
-    
-    max_alpha_next = 0.0
-    max_descent_violation = 0.0
 
-    c_frac = 0.9 # number between 0 and 1, higher nr says more of the energy decrease should look linear
+    c_frac = L_frac # number between 0 and 1, higher nr says more of the energy decrease should look linear
     
     for i in range(num_samples):
         x_k = x_samples[:, i]
@@ -184,42 +181,52 @@ def verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, current_alpha, num_sam
         # We add a tiny tolerance (1e-8) for floating point math
         if V_next > current_alpha:
             invariance_passed = False
-            if V_next > max_alpha_next:
-                max_alpha_next = V_next
+            break
                 
         # Point 4: Local Descent (V_next - V_curr <= c_frac -stage_cost)
         if (V_next - V_curr) > (c_frac * -stage_cost):
             descent_passed = False
             violation = (V_next - V_curr) - (c_frac * -stage_cost)
-            if violation > max_descent_violation:
-                max_descent_violation = violation
+            break
                 
-    return invariance_passed, descent_passed, max_alpha_next, max_descent_violation
+    return invariance_passed, descent_passed
 
 
-def find_nonlinear_terminal_set(P, K, Q, R , x_eq, u_eq, alpha_init, shrink_factor, itterations, num_samples):
-    alpha_nl = alpha_init
-    i = 0
-    while i <= itterations:
-        inv_pass, desc_pass, next_V, desc_viol = verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, alpha_nl, num_samples)
+def find_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, alpha_initial, L_frac,  max_iterations, num_samples):
+
+    alpha_high = alpha_initial  # We know this is likely too big
+    alpha_low = 0.0             # We know the origin is perfectly safe
+    alpha_best = 0.0            # Store the highest safe alpha we find
+    
+    # We will stop searching when the gap between high and low is less than 0.01
+    tolerance = 0.01 
+    
+    for i in range(1, max_iterations + 1):
+        # Test the midpoint
+        alpha_mid = alpha_low + (alpha_high-alpha_low) * 0.5
+        
+        # Stop if precision is reached
+        if (alpha_high - alpha_low) < tolerance:
+            break
+            
+        print(f"Iteration {i:02d}: Testing alpha = {alpha_mid:.5f}...", end=" ")
+        
+        # Run verification function
+        inv_pass, desc_pass = verify_nonlinear_terminal_set(
+            P, K, Q, R, x_eq, u_eq, alpha_mid, L_frac, num_samples
+        )
         
         if inv_pass and desc_pass:
-            print(f"\n[SUCCESS] Nonlinear conditions satisfied!")
-            print(f"Final safe nonlinear alpha: {alpha_nl:.5f}")
-            break
+            print("PASSED! (Searching higher)")
+            alpha_best = alpha_mid      # Save current best safe set
+            alpha_low = alpha_mid       # The true max must be higher than this
         else:
-            print(f"[FAILED] alpha = {alpha_nl:.5f}")
-            if not inv_pass:
-                print(f"  -> Invariance failed. Max V_next = {next_V:.5f} (Target: <= {alpha_nl:.5f})")
-            if not desc_pass:
-                print(f"  -> Descent failed. Max error = {desc_viol:.5e}, iteration {i}")
-                
-            # Shrink alpha and try again
-            alpha_nl *= shrink_factor
+            print("FAILED. (Searching lower)")
+            alpha_high = alpha_mid      # The true max must be lower than this
 
-        i += 1
-
-    if not inv_pass and not desc_pass:
-        print(f"[FAILED MAX ITTERS] alpha = {alpha_nl:.5f}")
-
-    return alpha_nl
+    if alpha_best > 0:
+        print(f"Maximum safe nonlinear alpha found: {alpha_best:.5f}")
+    else:
+        print(f"Could not find a safe nonlinear alpha.")
+        
+    return alpha_best
