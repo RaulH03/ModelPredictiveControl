@@ -147,6 +147,9 @@ if __name__ == "__main__":
     print('Discrete A\n', np.round(Ad, 4))
     print('Discrete B\n', np.round(Bd, 4))
 
+    sm.pprint(f)
+    sm.pprint(M)
+
 
 
 
