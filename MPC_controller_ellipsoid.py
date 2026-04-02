@@ -20,8 +20,8 @@ n_inputs = 1
 N = 20
 
 # Tuning Weights
-Q = np.diag([10, 500, 1, 10]) 
-R = np.array([[0.1]])
+Q = np.diag([1, 200, 1, 10]) 
+R = np.array([[1]])
 
 # Terminal Cost P
 P = solve_discrete_are(Ad, Bd, Q, R)
