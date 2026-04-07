@@ -20,7 +20,7 @@ n_inputs = 1
 N = 20
 
 # Tuning Weights
-Q = np.diag([1, 200, 1, 10]) 
+Q = np.diag([50, 200, 1, 1]) 
 R = np.array([[1]])
 
 # Terminal Cost P
@@ -32,16 +32,17 @@ K = -np.linalg.inv(R + Bd.T @ P @ Bd) @ (Bd.T @ P @ Ad)
 # Constraints
 u_max = 2.0 # Max torque in Nm
 theta1_max = np.deg2rad(25)    # 25 degrees
-theta2_dev_max = np.deg2rad(25) # 25 degrees deviation
+theta2_dev_max = np.deg2rad(20) # 25 degrees deviation
 
 # Conservative ellipsoidal terminal set size
 alpha = compute_terminal_alpha_double_pendulum(P, K, theta1_max, theta2_dev_max, u_max)
+print(alpha)
 
 # Initial State (Deviation from x_e)
-x_curr = np.array([0.0, np.deg2rad(5), 0.0, 0.0])       # Starting with a 5-degree offset on the upper link
+x_curr = np.array([0.0, np.deg2rad(20), 0.0, 0.0])       # Starting with a 5-degree offset on the upper link
 
 # Simulation containers
-steps = 150
+steps = 100
 history_x = np.zeros((n_states, steps))
 history_u = np.zeros((n_inputs, steps))
 
