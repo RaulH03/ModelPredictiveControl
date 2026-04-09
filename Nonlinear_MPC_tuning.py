@@ -17,7 +17,17 @@ def run_and_plot(cases, tuning_name, latex, filename, fixed_params, save_fig=Fal
         out = run_mpc(**mpc_params)
         results.append((case["label"], out))
 
-    fig, axes = plt.subplots(3, 1, figsize=(8, 10), sharex=True)
+    fig, axes = plt.subplots(3, 1, figsize=(3.5, 4.5), sharex=True)
+
+    # plt.rcParams.update({
+    # 'font.size': 6,          # Standard IEEE text size
+    # 'axes.labelsize': 6,     # Slightly larger for axis titles
+    # "axes.titlesize": 6,
+    # 'legend.fontsize': 6,    # Smaller for legends to save space
+    # 'xtick.labelsize': 6,
+    # 'ytick.labelsize': 6,
+    # 'lines.linewidth': 1.2   # Slightly thicker lines for visibility
+    # })
 
     # 1. Delta Theta 2
     for label, out in results:
@@ -95,20 +105,20 @@ def compare_parameter_cases(save_fig=False):
     # define best weigths from previous study
     best_weights = {
         "q_delta_theta2": 200,  
-        "q_theta1": 1,      
-        "q_theta2_dot": 1,
-        "q_theta1_dot": 10
+        # "q_theta1": 1,      
+        # "q_theta2_dot": 1,
+        # "q_theta1_dot": 10
     }
 
     studies = [
-        # {
-        #     "name": "q_delta_theta2 Study", 
-        #     "key": "q_delta_theta2", 
-        #     "latex": r"q_{\theta 2}", 
-        #     "file": "qtheta2_tuning", 
-        #     "test_values": [1, 10, 100, 200, 500],
-        #     "use_best_weights": False  
-        # },
+        {
+            "name": "q_delta_theta2 Study", 
+            "key": "q_delta_theta2", 
+            "latex": r"q_{\theta 2}", 
+            "file": "qtheta2_tuning", 
+            "test_values": [10, 100, 200, 500],
+            "use_best_weights": False  
+        },
         # {
         #     "name": "q_theta1 Study", 
         #     "key": "q_theta1", 
@@ -118,23 +128,23 @@ def compare_parameter_cases(save_fig=False):
         #     "use_best_weights": True 
         # },
 
-        # {
-        #     "name": "q_theta2_dot Study", 
-        #     "key": "q_theta2_dot", 
-        #     "latex": r"q_{\dot{\theta} 2}", 
-        #     "file": "qtheta2_dot_tuning", 
-        #     "test_values": [0.1, 1, 10, 100],
-        #     "use_best_weights": True 
-        # },
+        {
+            "name": "q_theta2_dot Study", 
+            "key": "q_theta2_dot", 
+            "latex": r"q_{\dot{\theta} 2}", 
+            "file": "qtheta2_dot_tuning", 
+            "test_values": [0.1, 1, 10, 100],
+            "use_best_weights": True 
+        },
 
-        # {
-        #     "name": "q_theta1_dot Study", 
-        #     "key": "q_theta1_dot", 
-        #     "latex": r"q_{\dot{\theta} 1}", 
-        #     "file": "qtheta1_dot_tuning", 
-        #     "test_values": [0.1, 1, 10, 100],
-        #     "use_best_weights": True 
-        # },
+        {
+            "name": "q_theta1_dot Study", 
+            "key": "q_theta1_dot", 
+            "latex": r"q_{\dot{\theta} 1}", 
+            "file": "qtheta1_dot_tuning", 
+            "test_values": [0.1, 1, 10, 100],
+            "use_best_weights": True 
+        },
 
         # {
         #     "name": "R Study", 
@@ -145,14 +155,15 @@ def compare_parameter_cases(save_fig=False):
         #     "use_best_weights": True
         # }
         
-        {
-            "name": "Horizon Study", 
-            "key": "N", 
-            "latex": "N", 
-            "file": "horizon_study", 
-            "test_values": [5, 10, 20, 30, 40, 50],
-            "use_best_weights": True  # Flag to use the weights above
-        }
+        # {
+        #     "name": "Horizon Study", 
+        #     "key": "N", 
+        #     "latex": "N", 
+        #     "file": "horizon_study", 
+        #     "test_values": [20, 30, 40],
+        #     "use_best_weights": True  # Flag to use the weights above
+        # }
+
 
     ]
 
