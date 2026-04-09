@@ -118,7 +118,8 @@ def f_nl(x_dev, u_dev, x_eq, u_eq):
     """
     # Convert deviation variables to true physical variables
     x_true = x_dev + x_eq
-    u_true = (u_dev + u_eq).item() # ensure scalar for the ODE
+
+    u_true = u_dev + u_eq if isinstance(u_dev, float) else (u_dev + u_eq).item() # ensure scalar for the ODE
     
     # Define the ODE specifically for this constant input
     def current_ode(t, x_state):
@@ -192,7 +193,7 @@ def verify_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, current_alpha, L_frac,
     return invariance_passed, descent_passed
 
 
-def find_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, alpha_initial, L_frac,  max_iterations, num_samples):
+def find_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, alpha_initial, L_frac,  max_iterations, num_samples, Verbose=False):
 
     alpha_high = alpha_initial  # We know this is likely too big
     alpha_low = 0.0             # We know the origin is perfectly safe
@@ -209,7 +210,8 @@ def find_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, alpha_initial, L_frac,  
         if (alpha_high - alpha_low) < tolerance:
             break
             
-        print(f"Iteration {i:02d}: Testing alpha = {alpha_mid:.5f}...", end=" ")
+        if Verbose:
+            print(f"Iteration {i:02d}: Testing alpha = {alpha_mid:.5f}...", end=" ")
         
         # Run verification function
         inv_pass, desc_pass = verify_nonlinear_terminal_set(
@@ -217,15 +219,18 @@ def find_nonlinear_terminal_set(P, K, Q, R, x_eq, u_eq, alpha_initial, L_frac,  
         )
         
         if inv_pass and desc_pass:
-            print("PASSED! (Searching higher)")
+            if Verbose:
+                print("PASSED! (Searching higher)")
             alpha_best = alpha_mid      # Save current best safe set
             alpha_low = alpha_mid       # The true max must be higher than this
         else:
-            print("FAILED. (Searching lower)")
+            if Verbose:
+                print("FAILED. (Searching lower)")
             alpha_high = alpha_mid      # The true max must be lower than this
 
     if alpha_best > 0:
-        print(f"Maximum safe nonlinear alpha found: {alpha_best:.5f}")
+        if Verbose:
+            print(f"Maximum safe nonlinear alpha found: {alpha_best:.5f}")
     else:
         print(f"Could not find a safe nonlinear alpha.")
         
