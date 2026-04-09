@@ -118,16 +118,16 @@ def run_mpc(
 
 if __name__ == "__main__":
     results = run_mpc(
-        q_theta1=10,
+        q_theta1=50,
         q_delta_theta2=200,
-        q_theta1_dot=10,
+        q_theta1_dot=1,
         q_theta2_dot=1,
-        r_input=0.1,
-        x0=[0.0, np.deg2rad(5), 0.0, 0.0],
-        u_max=0.5,
+        r_input=1,
+        x0=[0.0, np.deg2rad(25), 0.0, 0.0],
+        u_max=1.5,
         theta1_max=np.deg2rad(25),
         theta2_dev_max=np.deg2rad(25),
-        N=20,
+        N=10,
         steps=100,
     )
 
@@ -136,7 +136,7 @@ if __name__ == "__main__":
     simulated_steps = results["simulated_steps"]
 
     # Plotting results
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(5, 4))
 
     plt.subplot(2, 1, 1)
     plt.plot(np.rad2deg(history_x[0, :]), label='Theta 1 (Lower)')
