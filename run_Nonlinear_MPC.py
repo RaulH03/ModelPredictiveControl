@@ -126,7 +126,7 @@ def run_mpc(
         "R": R,
         "P": P,
         "K": K,
-        "alpha": alpha,
+        "alpha": nl_alpha,
         "statuses": status_history,
         "simulated_steps": simulated_steps,
         "Ts": Ts,
