@@ -173,7 +173,7 @@ def compare_noise_levels():
         out = run_mpc_with_measurement_noise(
             q_theta1=1,
             q_delta_theta2=200,
-            q_theta1_dot=10,
+            q_theta1_dot=1,
             q_theta2_dot=1,
             r_input=1,
             x0=[0.0, np.deg2rad(20), 0.0, 0.0],
@@ -181,7 +181,7 @@ def compare_noise_levels():
             theta1_max=np.deg2rad(90),
             theta2_dev_max=np.deg2rad(90),
             noise_std=case["noise_std"],
-            N=30,
+            N=20,
             steps=100,
             random_seed=1,
         )

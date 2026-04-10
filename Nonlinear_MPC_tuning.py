@@ -147,8 +147,8 @@ def compare_parameter_cases(save_fig=False):
         "q_delta_theta2": 200,  
         "q_theta1": 1,      
         "q_theta2_dot": 1,
-        "q_theta1_dot": 10,
-        "N": 30
+        "q_theta1_dot": 1,
+        "N": 20
     }
 
     studies = [
